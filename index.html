@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dice Rolling App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Add dark theme preference */
+        :root {
+            --background-color: #2f2f2f;
+            --text-color: #ffffff;
+        }
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --background-color: #1a1a1a;
+                --text-color: #ffffff;
+            }
+        }
+        @media (prefers-color-scheme: light) {
+            :root {
+                --background-color: #f2f2f2;
+                --text-color: #000000;
+            }
+        }
+        #roll-history {
+            color: #000000;
+            background-color: #f2f2f2;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        #roll-history pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body class="h-screen flex justify-center items-center flex-col">
+    <h1 class="text-3xl mb-4">Dice Rolling App</h1>
+    <div class="flex flex-col items-center">
+        <button id="add-dice-button" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-4">Add Dice</button>
+        <div id="dice-container" class="flex flex-wrap justify-center mb-4"></div>
+        <div id="result" class="text-2xl mb-4"></div>
+        <div id="roll-history" class="hidden bg-gray-200 p-4 rounded mb-4 text-left overflow-y-auto h-64">
+            <pre id="roll-history-text"></pre>
+        </div>
+        <button id="clear-history-button" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded mb-4">Clear Roll History</button>
+        <button id="roll-all-button" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mb-4 hidden">Roll All</button>
+    </div>
+
+    <script>
+        let diceCount = 0;
+        const resultDiv = document.getElementById('result');
+        const rollHistoryDiv = document.getElementById('roll-history');
+        const rollHistoryText = document.getElementById('roll-history-text');
+        const addDiceButton = document.getElementById('add-dice-button');
+        const diceContainer = document.getElementById('dice-container');
+        const clearHistoryButton = document.getElementById('clear-history-button');
+        const rollAllButton = document.getElementById('roll-all-button');
+
+        addDiceButton.addEventListener('click', () => {
+            diceCount++;
+            const newDice = document.createElement('div');
+            newDice.classList.add('flex', 'flex-col', 'items-center', 'mx-2', 'mb-2');
+            newDice.id = `dice-${diceCount}`;
+            newDice.innerHTML = `
+                <select id="dice-select-${diceCount}" class="bg-gray-200 text-gray-700 py-2 px-4 rounded mb-2">
+                    <option value="4">4-sided dice</option>
+                    <option value="6">6-sided dice</option>
+                    <option value="8">8-sided dice</option>
+                    <option value="10">10-sided dice</option>
+                    <option value="12">12-sided dice</option>
+                    <option value="20">20-sided dice</option>
+                    <option value="custom">Custom</option>
+                </select>
+                <div id="custom-dice-container-${diceCount}" class="hidden mb-2">
+                    <input id="custom-dice-${diceCount}" type="number" class="bg-gray-200 text-gray-700 py-2 px-4 rounded" placeholder="Enter custom dice sides (1-100)">
+                </div>
+                <button id="roll-dice-${diceCount}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-2">Roll Dice</button>
+                <button id="remove-dice-${diceCount}" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded mt-2">Remove Dice</button>
+            `;
+            diceContainer.appendChild(newDice);
+
+            const newDiceSelect = document.getElementById(`dice-select-${diceCount}`);
+            const newCustomDiceContainer = document.getElementById(`custom-dice-container-${diceCount}`);
+            const newCustomDiceInput = document.getElementById(`custom-dice-${diceCount}`);
+            const newRollButton = document.getElementById(`roll-dice-${diceCount}`);
+            const newRemoveButton = document.getElementById(`remove-dice-${diceCount}`);
+
+            newDiceSelect.addEventListener('change', () => {
+                if (newDiceSelect.value === 'custom') {
+                    newCustomDiceContainer.classList.remove('hidden');
+                } else {
+                    newCustomDiceContainer.classList.add('hidden');
+                }
+            });
+
+            newRollButton.addEventListener('click', () => {
+                let diceSides;
+                if (newDiceSelect.value === 'custom') {
+                    diceSides = parseInt(newCustomDiceInput.value);
+                    if (isNaN(diceSides) || diceSides < 1 || diceSides > 100) {
+                        resultDiv.textContent = `Invalid custom dice sides. Please enter a number between 1 and 100.`;
+                        return;
+                    }
+                } else {
+                    diceSides = parseInt(newDiceSelect.value);
+                }
+                const diceRoll = Math.floor(Math.random() * diceSides) + 1;
+                resultDiv.textContent = `You rolled a ${diceRoll} on a ${diceSides}-sided dice`;
+                rollHistoryText.textContent += `You rolled a ${diceRoll} on a ${diceSides}-sided dice\n`;
+                rollHistoryDiv.classList.remove('hidden');
+                rollHistoryDiv.scrollTop = rollHistoryDiv.scrollHeight;
+            });
+
+            newRemoveButton.addEventListener('click', () => {
+                newDice.remove();
+                diceCount--;
+                for (let i = diceCount; i >= 0; i--) {
+                    const dice = document.getElementById(`dice-${i}`);
+                    if (dice) {
+                        dice.id = `dice-${i}`;
+                        const select = dice.querySelector('select');
+                        select.id = `dice-select-${i}`;
+                        const customContainer = dice.querySelector('div');
+                        customContainer.id = `custom-dice-container-${i}`;
+                        const input = customContainer.querySelector('input');
+                        input.id = `custom-dice-${i}`;
+                        const rollButton = dice.querySelector('#roll-dice-' + (i + 1));
+                        rollButton.id = `roll-dice-${i}`;
+                        const removeButton = dice.querySelector('button:nth-child(4)');
+                        removeButton.id = `remove-dice-${i}`;
+                    }
+                }
+                if (diceCount === 0) {
+                    rollHistoryDiv.classList.add('hidden');
+                    rollHistoryText.textContent = '';
+                    rollAllButton.classList.add('hidden');
+                } else if (diceCount > 1 && rollAllButton.classList.contains('hidden')) {
+                    rollAllButton.classList.remove('hidden');
+                }
+            });
+
+            if (diceCount > 1 && rollAllButton.classList.contains('hidden')) {
+                rollAllButton.classList.remove('hidden');
+            }
+        });
+
+        rollAllButton.addEventListener('click', () => {
+            let results = '';
+            for (let i = 1; i <= diceCount; i++) {
+                const diceSelect = document.getElementById(`dice-select-${i}`);
+                let diceSides;
+                if (diceSelect.value === 'custom') {
+                    const customInput = document.getElementById(`custom-dice-${i}`);
+                    diceSides = parseInt(customInput.value);
+                    if (isNaN(diceSides) || diceSides < 1 || diceSides > 100) {
+                        resultDiv.textContent = `Invalid custom dice sides for dice ${i}. Please enter a number between 1 and 100.`;
+                        return;
+                    }
+                } else {
+                    diceSides = parseInt(diceSelect.value);
+                }
+                const diceRoll = Math.floor(Math.random() * diceSides) + 1;
+                results += `You rolled a ${diceRoll} on a ${diceSides}-sided dice\n`;
+            }
+            resultDiv.textContent = 'You rolled:';
+            rollHistoryText.textContent += results;
+            rollHistoryDiv.classList.remove('hidden');
+            rollHistoryDiv.scrollTop = rollHistoryDiv.scrollHeight;
+        });
+
+        clearHistoryButton.addEventListener('click', () => {
+            rollHistoryDiv.classList.add('hidden');
+            rollHistoryText.textContent = '';
+        });
+    </script>
+</body>
+</html>
